@@ -66,7 +66,8 @@ class MyBank{
   		$form3 = new form;
   		$form3->addTransForm();
   	}else{
-  		echo 'I got the form';
+  		$transaction = new transactions;
+  		$transaction->addTransaction($_POST['type'],$_POST['amount'],$_POST['source']);
   	}
   }
 }
@@ -114,8 +115,7 @@ class form{
               </FORM>';
 	
 		echo $form3;
-		session_start();
-		print_r($_SESSION);
+		
 	}
 }
 class sign_up_verify{
@@ -150,7 +150,7 @@ class sign_up_verify{
 					}
 				}
 				if($row  !==0){
-					echo 'Soory no duplicate'; 
+					echo 'Sorry no duplicate'; 
 				}  else {
 					$this->write_csv($_POST ,$filecsv);
 					$this->write_csv($_POST,$username);
@@ -198,7 +198,8 @@ class verifyuser {
 			session_start();
 			$_SESSION['user_info'] = array();
 			$_SESSION['user_info'][] = $user_name;
-			print_r($_SESSION);
+			//print_r($_SESSION);
+			//session_destroy();
 			echo "Welcome $us you are now in the bank<br>";
 			echo '<a href="./bank.php?page=my_bal">Click to veiw balance</a><br>';
 			echo '<a href="./bank.php?page=add_trans">Click to add transavtions</a><br>';
@@ -212,8 +213,67 @@ class verifyuser {
 	}
 }
 
-class Prosses_trans{
-	public function
+class transactions{
+	public function addTransaction($type, $amount, $source){
+		if($type == 'debit'){
+			$debit = new transaction(0);
+			$debit->debits($amount, $source);
+		}else{
+			$credit = new transaction(0);
+			$credit->credits($amount, $source);
+		
+		}
+	}
 	
 }
-?>
+class transaction{
+	public $starting_balance;
+	public $current_balance;
+	public $transactions = array();
+	
+	public function __construct($amount) {
+		$this->starting_balance = $amount;
+		$this->current_balance = $amount;
+	}
+	public function debits($amount, $source) {
+		$transaction = array();
+		$transaction['type'] = 'debit';
+		$transaction['amount'] = $amount;
+		$transaction['source'] = $source;
+		session_start();
+		$_SESSION['transactions'][] = $transaction;
+		//print_r($_SESSION);
+		//session_destroy();
+		$this->process();
+	}
+	public function credits($amount, $source) {
+		$transaction = array();
+		$transaction['type'] = 'credit';
+		$transaction['amount'] = $amount;
+		$transaction['source'] = $source;
+		$this->transactions[] = $transaction;
+		session_start();
+		$_SESSION['transactions'][] = $transaction;
+		//print_r($_SESSION);
+		//session_destroy();
+		$this->process();
+	}
+	public function process() {
+		echo 'Type  |    Source   |   Amount <br>';
+		foreach($_SESSION['transactions'] as $transaction) {
+			 
+			echo $transaction['type'] . ' |  ' . $transaction['source'] . ' |   '  .  $transaction['amount'] . '<br>';
+			if($transaction['type'] == 'debit') {
+				$this->current_balance = $this->current_balance - $transaction['amount'];
+			} else {
+				$this->current_balance = $this->current_balance + $transaction['amount'];
+			}
+}	
+	}
+	public function __destruct() {
+		echo '<br> Your starting balance was: ' . $this->starting_balance . '<br>';
+		echo 'Your ending balance is: ' . $this->current_balance . '<br>';
+		print_r($_SESSION['user_info']);
+	}
+}
+?>  
